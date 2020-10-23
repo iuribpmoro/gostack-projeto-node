@@ -8,6 +8,8 @@ import uploadConfig from '@config/upload';
 import User from '@modules/users/infra/typeorm/entities/User';
 import IUsersRepository from '@modules/users/repositories/IUsersRepository';
 
+import IStorageProvider from '@shared/container/providers/StorageProvider/models/IStorageProvider';
+
 // formato do request recebido
 interface IRequest {
     user_id: string;
@@ -19,6 +21,9 @@ class UpdateUserAvatarService {
     constructor(
         @inject('UsersRepository')
         private usersRepository: IUsersRepository,
+
+        @inject('StorageProvider')
+        private storageProvider: IStorageProvider,
     ) {}
 
     public async execute({ user_id, avatarFilename }: IRequest): Promise<User> {
@@ -33,23 +38,13 @@ class UpdateUserAvatarService {
 
         // verifica se o usuario ja possui avatar
         if (user.avatar) {
-            // verifica se o avatar realmente existe
-            const userAvatarFilePath = path.join(
-                uploadConfig.directory,
-                user.avatar,
-            );
-            const userAvatarFileExists = await fs.promises.stat(
-                userAvatarFilePath,
-            );
-
-            // deleta o avatar antigo
-            if (userAvatarFileExists) {
-                await fs.promises.unlink(userAvatarFilePath);
-            }
+            this.storageProvider.deleteFile(user.avatar);
         }
 
+        const filename = await this.storageProvider.saveFile(avatarFilename);
+
         // atribui o nome do novo avatar do usuario
-        user.avatar = avatarFilename;
+        user.avatar = filename;
 
         // como ja existe um usuario com esse id, vai atualizar as informacoes que foram mudadas
         await this.usersRepository.save(user);
