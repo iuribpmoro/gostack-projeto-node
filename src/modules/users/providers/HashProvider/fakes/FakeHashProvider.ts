@@ -1,0 +1,12 @@
+import IHashProvider from '@modules/users/providers/HashProvider/models/IHashProvider';
+
+// OBJETIVO: Gerar e comparar senhas sem depender do bcrypt
+export default class BCryptHashProvider implements IHashProvider {
+  public async generateHash(payload: string): Promise<string> {
+    return payload;
+  }
+
+  public async compareHash(payload: string, hashed: string): Promise<boolean> {
+    return payload === hashed;
+  }
+}
